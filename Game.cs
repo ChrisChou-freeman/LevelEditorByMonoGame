@@ -8,44 +8,75 @@ namespace ActionGameExample
     {
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
+        public static Vector2 originalScreenSize;
+        private Vector2 _setScreenSize;
+        private Matrix _globalTransformation;
+        private int _backbufferWidth;
+        private int _backbufferHeight;
+        private FrameCounter _frameCounter;
+        private LevelEditor _levelEditor;
+
 
         public Game()
         {
-            _graphics = new GraphicsDeviceManager(this);
-            Content.RootDirectory = "Content";
-            IsMouseVisible = true;
+            this._graphics = new GraphicsDeviceManager(this);
+            this.Content.RootDirectory = "Content";
+            this.IsMouseVisible = false;
+            originalScreenSize = new Vector2(800, 480);
+            this._setScreenSize = new Vector2(1280, 720);
+            this._levelEditor = new LevelEditor(this.Services);
+        }
+
+        private void InitialScreenSize()
+        {
+            this._graphics.IsFullScreen = false;
+            this._graphics.PreferredBackBufferWidth = (int)this._setScreenSize.X;
+            this._graphics.PreferredBackBufferHeight = (int)this._setScreenSize.Y;
+            this._graphics.ApplyChanges();
         }
 
         protected override void Initialize()
         {
-            // TODO: Add your initialization logic here
-
+            this.InitialScreenSize();
             base.Initialize();
+        }
+
+        public void ScalePresentationArea()
+        {
+            //Work out how much we need to scale our graphics to fill the screen
+            this._backbufferWidth = GraphicsDevice.PresentationParameters.BackBufferWidth;
+            this._backbufferHeight = GraphicsDevice.PresentationParameters.BackBufferHeight;
+            float horScaling = this._backbufferWidth / originalScreenSize.X;
+            float verScaling = this._backbufferHeight / originalScreenSize.Y;
+            Vector3 screenScalingFactor = new Vector3(horScaling, verScaling, 1);
+            this._globalTransformation = Matrix.CreateScale(screenScalingFactor);
         }
 
         protected override void LoadContent()
         {
-            _spriteBatch = new SpriteBatch(GraphicsDevice);
-
-            // TODO: use this.Content to load your game content here
+            this._spriteBatch = new SpriteBatch(GraphicsDevice);
+            var uiFount = this.Content.Load<SpriteFont>("Font/UI");
+            this._frameCounter = new FrameCounter(uiFount);
+            this._levelEditor.LoadContent();
+            this.ScalePresentationArea();
         }
 
         protected override void Update(GameTime gameTime)
         {
-            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
-                Exit();
-
-            // TODO: Add your update logic here
-
+            // if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
+            //     Exit();
+            this._frameCounter.Update(gameTime);
+            this._levelEditor.Update();
             base.Update(gameTime);
         }
 
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
-
-            // TODO: Add your drawing code here
-
+            this._spriteBatch.Begin(SpriteSortMode.Immediate, null, null, null, null,null, this._globalTransformation);
+            this._levelEditor.Draw(this._spriteBatch);
+            this._frameCounter.Draw(this._spriteBatch);
+            this._spriteBatch.End();
             base.Draw(gameTime);
         }
     }
