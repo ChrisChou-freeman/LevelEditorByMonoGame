@@ -4,11 +4,12 @@ using Microsoft.Xna.Framework.Input;
 
 namespace ActionGameExample
 {
+    // game music use The Chain 2:49
     public class Game : Microsoft.Xna.Framework.Game
     {
+        public static Vector2 originalScreenSize = new Vector2(800, 480);
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
-        public static Vector2 originalScreenSize;
         private Vector2 _setScreenSize;
         private Matrix _globalTransformation;
         private int _backbufferWidth;
@@ -22,7 +23,6 @@ namespace ActionGameExample
             this._graphics = new GraphicsDeviceManager(this);
             this.Content.RootDirectory = "Content";
             this.IsMouseVisible = false;
-            originalScreenSize = new Vector2(800, 480);
             this._setScreenSize = new Vector2(1280, 720);
             this._levelEditor = new LevelEditor(this.Services);
         }
@@ -33,6 +33,7 @@ namespace ActionGameExample
             this._graphics.PreferredBackBufferWidth = (int)this._setScreenSize.X;
             this._graphics.PreferredBackBufferHeight = (int)this._setScreenSize.Y;
             this._graphics.ApplyChanges();
+            this._levelEditor.Initialize(this._graphics.GraphicsDevice);
         }
 
         protected override void Initialize()
