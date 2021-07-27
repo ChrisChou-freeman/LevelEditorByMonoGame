@@ -2,7 +2,7 @@
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 
-namespace ActionGameExample
+namespace PlatformShooter
 {
     // game music use The Chain 2:49
     public class Game : Microsoft.Xna.Framework.Game
@@ -16,13 +16,15 @@ namespace ActionGameExample
         private int _backbufferHeight;
         private FrameCounter _frameCounter;
         private LevelEditor _levelEditor;
+        public static float horScaling;
+        public static float verScaling;
 
 
         public Game()
         {
             this._graphics = new GraphicsDeviceManager(this);
             this.Content.RootDirectory = "Content";
-            this.IsMouseVisible = false;
+            this.IsMouseVisible = true;
             this._setScreenSize = new Vector2(1280, 720);
             this._levelEditor = new LevelEditor(this.Services);
         }
@@ -47,8 +49,8 @@ namespace ActionGameExample
             //Work out how much we need to scale our graphics to fill the screen
             this._backbufferWidth = GraphicsDevice.PresentationParameters.BackBufferWidth;
             this._backbufferHeight = GraphicsDevice.PresentationParameters.BackBufferHeight;
-            float horScaling = this._backbufferWidth / originalScreenSize.X;
-            float verScaling = this._backbufferHeight / originalScreenSize.Y;
+            horScaling = this._backbufferWidth / originalScreenSize.X;
+            verScaling = this._backbufferHeight / originalScreenSize.Y;
             Vector3 screenScalingFactor = new Vector3(horScaling, verScaling, 1);
             this._globalTransformation = Matrix.CreateScale(screenScalingFactor);
         }
@@ -66,6 +68,10 @@ namespace ActionGameExample
         {
             // if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
             //     Exit();
+            if(this._backbufferWidth != GraphicsDevice.PresentationParameters.BackBufferWidth 
+                || this._backbufferHeight != GraphicsDevice.PresentationParameters.BackBufferHeight)
+                this.ScalePresentationArea();
+
             this._frameCounter.Update(gameTime);
             this._levelEditor.Update();
             base.Update(gameTime);

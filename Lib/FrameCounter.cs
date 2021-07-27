@@ -4,46 +4,49 @@ using System.Collections.Generic;
 using System.Linq;
 using System;
 
-public class FrameCounter
+namespace PlatformShooter
 {
-
-    private long _totalFrames;
-    private float _totalSeconds;
-    private float _averageFramesPerSecond;
-    private float _currentFramesPerSecond;
-    private SpriteFont _font;
-    private const int _MAXIMUM_SAMPLES = 100;
-    private Queue<float> _sampleBuffer = new Queue<float>();
-
-    public FrameCounter(SpriteFont spriteFont)
+    public class FrameCounter
     {
-        this._font = spriteFont;
-    }
 
-    public void Update(GameTime gameTime)
-    {
-        var deltaTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
-        _currentFramesPerSecond = 1.0f / deltaTime;
+        private long _totalFrames;
+        private float _totalSeconds;
+        private float _averageFramesPerSecond;
+        private float _currentFramesPerSecond;
+        private SpriteFont _font;
+        private const int _MAXIMUM_SAMPLES = 100;
+        private Queue<float> _sampleBuffer = new Queue<float>();
 
-        _sampleBuffer.Enqueue(_currentFramesPerSecond);
-
-        if (_sampleBuffer.Count > _MAXIMUM_SAMPLES)
+        public FrameCounter(SpriteFont spriteFont)
         {
-            _sampleBuffer.Dequeue();
-            this._averageFramesPerSecond = _sampleBuffer.Average(i => i);
-        } 
-        else
-        {
-            this._averageFramesPerSecond = _currentFramesPerSecond;
+            this._font = spriteFont;
         }
 
-        _totalFrames++;
-        _totalSeconds += deltaTime;
-    }
+        public void Update(GameTime gameTime)
+        {
+            var deltaTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
+            _currentFramesPerSecond = 1.0f / deltaTime;
 
-    public void Draw(SpriteBatch spriteBatch)
-    {
-        var fps = string.Format("FPS: {0}", Math.Round(this._averageFramesPerSecond));
-        spriteBatch.DrawString(this._font, fps, new Vector2(200, 0), Color.White);
+            _sampleBuffer.Enqueue(_currentFramesPerSecond);
+
+            if (_sampleBuffer.Count > _MAXIMUM_SAMPLES)
+            {
+                _sampleBuffer.Dequeue();
+                this._averageFramesPerSecond = _sampleBuffer.Average(i => i);
+            } 
+            else
+            {
+                this._averageFramesPerSecond = _currentFramesPerSecond;
+            }
+
+            _totalFrames++;
+            _totalSeconds += deltaTime;
+        }
+
+        public void Draw(SpriteBatch spriteBatch)
+        {
+            var fps = string.Format("FPS: {0}", Math.Round(this._averageFramesPerSecond));
+            spriteBatch.DrawString(this._font, fps, new Vector2(200, Game.originalScreenSize.Y), Color.White);
+        }   
     }
 }
