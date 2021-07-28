@@ -21,7 +21,10 @@ namespace PlatformShooter
         private const int scrollSpeed = 2;
         private static readonly Rectangle tileSize = new Rectangle(0,0,32,32);
         public static bool showMenuContainer = false;
-        public static Rectangle menuContainer = new Rectangle(0,0,800, 100);
+        public static Rectangle menuContainer = new Rectangle(0, 0, 800, 100);
+        public static string inSelectTile = null;
+        public static bool onceLeftClick = false;
+        private  List<MenuStuct> _tilesList;
         private int levelNumber;
         private ContentManager _content;
         private List<LayerStuct> _layers;
@@ -29,8 +32,8 @@ namespace PlatformShooter
         private LevelDataForm _levelData;
         private Texture2D _pencil;
         private List<MenuStuct> _menuList;
-        private List<MenuStuct> _tilesList;
-        
+        private List<Keys> _onceKey;
+        private bool showGrid;
         
         public LevelEditor(IServiceProvider serviceProvider)
         {
@@ -38,8 +41,10 @@ namespace PlatformShooter
             this._layers = new List<LayerStuct>{};
             this._LineObjs = new List<LineStruct>{};
             this._menuList = new List<MenuStuct>{};
+            this._onceKey = new List<Keys>{};
             this._tilesList = new List<MenuStuct>{};
             this.levelNumber = 0;
+            this.showGrid = true;
         }
 
         public void Initialize(GraphicsDevice graphicsDevice)
@@ -50,8 +55,8 @@ namespace PlatformShooter
 
         private void LoadLevelJsonData(int[] gridsValue)
         {
-            int rows = gridsValue[1];
             int columns = gridsValue[0];
+            int rows = gridsValue[1];
             string levelJsonPath = $"Content/Level/{this.levelNumber}.json";
             FileStream levelJsonStream;
             if(File.Exists(levelJsonPath))
@@ -70,7 +75,7 @@ namespace PlatformShooter
             if(fileLength!=0)
                 this._levelData = JsonSerializer.Deserialize<LevelDataForm>(JsonString);
             else
-                this._levelData = new LevelDataForm(){tileMap=new int[columns, rows]};
+                this._levelData = new LevelDataForm(){tileMap=new int[rows, columns]};
             // Console.WriteLine(this._levelData.tileMap.GetLength(0));
             // Console.WriteLine(this._levelData.tileMap.GetLength(1));
         }
@@ -99,18 +104,28 @@ namespace PlatformShooter
         public void LoadContent()
         { 
             var gridMenu = this._content.Load<Texture2D>("Menu/gridMenu");
-            this._menuList.Add(new MenuStuct(gridMenu, new Vector2(10, 10)));
+            this._menuList.Add(new MenuStuct(gridMenu, new Vector2(10, 10), "menuContainerSwitch"));
             string [] tilesPath = Directory.GetFiles("Content/Tiles");
-            int tilesNunmber = 0;
-            for (int i=0;i<tilesPath.Length;i++)
+            int _width = tileSize.Width + 10;
+            double MaxCol = Math.Floor(Game.originalScreenSize.X/_width);
+            double col =  Math.Floor(tilesPath.Length / MaxCol);
+            col = (tilesPath.Length%MaxCol > 0) ? col +1 : col;
+
+            int currentCol =0;
+            int currentRow = 0;
+            for(int i=0;i<tilesPath.Length;i++)
             {
                 var tp = tilesPath[i];
                 string pathInContent = tp.Split("Content")[1].Substring(1);
                 if(pathInContent.Split(".")[1] == "DS_Store")
                     continue;
-                var tt = this._content.Load<Texture2D>(pathInContent.Split(".")[0]);
-                this._tilesList.Add(new MenuStuct(tt, new Vector2(tilesNunmber*tileSize.Width, 0)));
-                tilesNunmber++;
+                var tt = this._content.Load<Texture2D>(pathInContent.Split(".")[0]); 
+                if(currentCol>=MaxCol){
+                    currentCol =0;
+                    currentRow += 1;
+                }
+                this._tilesList.Add(new MenuStuct(tt, new Vector2((int)_width * currentCol, tileSize.Height * currentRow), "tileSelect"));
+                currentCol ++;
             }
             int lastLayerWidth = 0;
             for (int i=0;i<LAYER_REPEAT;i++){
@@ -127,12 +142,12 @@ namespace PlatformShooter
             this.LoadLevelJsonData(gridValue);
         }
 
-        public void HandleScreenScrool()
+        public void HandleScreenScrool(KeyboardState keyboardState)
         {
             var borderLeft = this._layers[0];
             var borderRight = this._layers[_layers.Count-1];
             var surfaceLayerScrollSpeed = scrollSpeed + (LAYER_NUMBER-1);
-            if(Keyboard.GetState().IsKeyDown(Keys.A))
+            if(keyboardState.IsKeyDown(Keys.A))
             {
                 if(borderLeft.position.X<0){
                     for(int i=0;i<this._layers.Count;i++)
@@ -149,7 +164,7 @@ namespace PlatformShooter
                     }
                 }
             }
-            if(Keyboard.GetState().IsKeyDown(Keys.D))
+            if(keyboardState.IsKeyDown(Keys.D))
             {
                 if(borderRight.rectangle().Right>Game.originalScreenSize.X)
                 {
@@ -169,39 +184,55 @@ namespace PlatformShooter
             }
         }
 
-        public void HandleMouseInput()
+        public void HandleLeftMouseInput(MouseState state)
         {
-            bool _handleMenuClick(MouseState state)
-            {
-                foreach(var menu in this._menuList)
-                {
-                    if(menu.OnClick(state))
-                        return true;
-                }
-                return false;
-            }
-            bool _handleGridClick(MouseState state)
+            void _handleGridClick(MouseState state)
             {
                 if(state.LeftButton == ButtonState.Pressed)
                 {
                     double x = (double)state.X / Game.horScaling / (double)32;
                     double y = (double)state.Y / Game.verScaling/ (double)32;
                     Console.WriteLine($"{Math.Floor(x)},{Math.Floor(y)}");
-                    return true;
                 }
-                return false;
             }
-            MouseState state = Mouse.GetState();
-            if(_handleMenuClick(state))
-                return;
-            if((!menuContainer.Contains(state.X / Game.horScaling, state.Y / Game.verScaling) || !showMenuContainer) && _handleGridClick(state))
-                return;
+            if(state.LeftButton == ButtonState.Released)
+                onceLeftClick = false;
+            foreach(var menu in this._menuList)
+            {
+                if(!onceLeftClick)
+                    menu.OnClickOnce(state);
+            }
+            foreach(var tile in _tilesList)
+            {
+                if(!onceLeftClick)
+                    tile.OnClickOnce(state);
+            }
+            if((!menuContainer.Contains(state.X / Game.horScaling, state.Y / Game.verScaling) || !showMenuContainer) && !onceLeftClick)
+                _handleGridClick(state);
+        }
+
+        public void HandleOnceKey(KeyboardState keyboardState){
+            if(keyboardState.IsKeyDown(Keys.G))
+            {
+                if(this._onceKey.Find(x=>x==Keys.G) == Keys.G)
+                    return;
+                this._onceKey.Add(Keys.G);
+                this.showGrid = this.showGrid ? false : true;
+            }
+            if(keyboardState.IsKeyUp(Keys.G))
+            {
+                this._onceKey.Remove(Keys.G);
+            }
         }
 
         public void Update()
         {
-            this.HandleScreenScrool();
-            this.HandleMouseInput();
+            KeyboardState keyboardState = Keyboard.GetState();
+            MouseState mouseState = Mouse.GetState();
+
+            this.HandleScreenScrool(keyboardState);
+            this.HandleOnceKey(keyboardState);
+            this.HandleLeftMouseInput(mouseState);
         }
 
         public void DrawGrid(SpriteBatch sb)
@@ -215,22 +246,35 @@ namespace PlatformShooter
 
         public void Draw(SpriteBatch sb)
         {
-           
             foreach(var item in this._layers)
             {
                 sb.Draw(item.texture, item.position, Color.White);
             }
+            if(this.showGrid)
+                this.DrawGrid(sb);
+            
             foreach(var menu in this._menuList)
             {
                 sb.Draw(menu.texture, menu.position, Color.White);
             }
+
             if(showMenuContainer)
             {
-                sb.Draw(this._pencil, menuContainer, null, Color.White);
-                foreach(var menu in this._tilesList)
-                    sb.Draw(menu.texture, menu.position, Color.White);
+                sb.Draw(this._pencil, menuContainer, Color.White);
+                foreach(var tile in _tilesList)
+                {
+                    sb.Draw(tile.texture, tile.position, Color.White);
+                    if(tile.texture.Name == inSelectTile)
+                    {
+                        var r = tile.rectangle();
+                        sb.Draw(this._pencil, new Rectangle(r.X, r.Y, r.Width, 2), Color.Red);
+                        sb.Draw(this._pencil, new Rectangle(r.X, r.Y, 2, r.Height), Color.Red);
+                        sb.Draw(this._pencil, new Rectangle(r.Left, r.Bottom, r.Width, 2), Color.Red);
+                        sb.Draw(this._pencil, new Rectangle(r.Right, r.Top, 2, r.Height), Color.Red);
+                    }
+                }
             }
-            // this.DrawGrid(sb);
+
         }
 
         public void Dispose()

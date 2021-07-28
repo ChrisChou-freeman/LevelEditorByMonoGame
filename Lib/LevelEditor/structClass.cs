@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -53,13 +55,15 @@ namespace LevelEditorSpace
     {
         public Texture2D texture;
         public Vector2 position;
-        public bool menuRelease;
+        public string type;
+        public bool isSelected;
 
-        public MenuStuct(Texture2D texture, Vector2 position)
+        public MenuStuct(Texture2D texture, Vector2 position, string type)
         {
             this.texture = texture;
             this.position = position;
-            this.menuRelease = true;
+            this.type = type;
+            this.isSelected = false;
         }
 
         public Rectangle rectangle()
@@ -67,29 +71,38 @@ namespace LevelEditorSpace
             return new Rectangle((int)this.position.X, (int)this.position.Y, this.texture.Width, this.texture.Height);
         }
 
-        public bool OnClick(MouseState state)
+        public void MenuContainerSwitch()
         {
-            if(state.LeftButton == ButtonState.Released)
-                this.menuRelease = true;
-            
-            // on pressing
-            if(!this.menuRelease && state.LeftButton == ButtonState.Pressed)
-                return true;
-            
-            if(state.LeftButton == ButtonState.Pressed && this.rectangle().Contains(state.X/PlatformShooter.Game.horScaling, state.Y/PlatformShooter.Game.verScaling))
+            var showMenuContainer = PlatformShooter.LevelEditor.showMenuContainer;
+            PlatformShooter.LevelEditor.showMenuContainer = showMenuContainer?false:true;
+            if(PlatformShooter.LevelEditor.showMenuContainer)
+                this.position += new Vector2(0, PlatformShooter.LevelEditor.menuContainer.Height);
+            else
+                this.position -= new Vector2(0, PlatformShooter.LevelEditor.menuContainer.Height);
+        }
+
+        public void TileSelect()
+        {
+            // Console.WriteLine(this.texture.Name);
+            PlatformShooter.LevelEditor.inSelectTile = this.texture.Name;
+        }
+
+        public void OnClickOnce(MouseState state)
+        {
+            if(this.rectangle().Contains(state.X/PlatformShooter.Game.horScaling, state.Y/PlatformShooter.Game.verScaling) && state.LeftButton == ButtonState.Pressed)
             {
-                // Console.WriteLine("menu click");
-                this.menuRelease = false;
-                var showMenuContainer = PlatformShooter.LevelEditor.showMenuContainer;
-                PlatformShooter.LevelEditor.showMenuContainer = showMenuContainer?false:true;
-                if(PlatformShooter.LevelEditor.showMenuContainer)
-                    this.position += new Vector2(0, PlatformShooter.LevelEditor.menuContainer.Height);
-                else
-                    this.position -= new Vector2(0, PlatformShooter.LevelEditor.menuContainer.Height);
-                return true;
+                Console.WriteLine("menu click once");
+                PlatformShooter.LevelEditor.onceLeftClick = true;
+                switch(type)
+                {
+                    case "menuContainerSwitch":
+                        this.MenuContainerSwitch();
+                        break;
+                    case "tileSelect":
+                        this.TileSelect();
+                        break;
+                }
             }
-            return false;
         }
     }
-
 }

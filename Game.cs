@@ -1,6 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
 
 namespace PlatformShooter
 {
@@ -18,7 +17,6 @@ namespace PlatformShooter
         private LevelEditor _levelEditor;
         public static float horScaling;
         public static float verScaling;
-
 
         public Game()
         {
