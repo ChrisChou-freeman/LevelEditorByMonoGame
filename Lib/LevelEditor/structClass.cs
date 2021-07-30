@@ -6,12 +6,12 @@ using Microsoft.Xna.Framework.Input;
 
 namespace LevelEditorSpace
 {
-    class LevelDataForm
+    public class LevelDataForm
     {
-        public int[,] tileMap;
+        public Dictionary<string, int>[] levelData{get; set;}
     }
 
-    class LayerStuct
+    public class LayerStuct
     {
         public Texture2D texture;
         public Vector2 position;
@@ -28,7 +28,7 @@ namespace LevelEditorSpace
         }
     }
 
-    class LineStruct
+    public class LineStruct
     {
         public Vector2 position;
         public int length;
@@ -51,19 +51,17 @@ namespace LevelEditorSpace
         }
     }
 
-    class MenuStuct
+    public class MenuStuct
     {
         public Texture2D texture;
         public Vector2 position;
         public string type;
-        public bool isSelected;
 
         public MenuStuct(Texture2D texture, Vector2 position, string type)
         {
             this.texture = texture;
             this.position = position;
             this.type = type;
-            this.isSelected = false;
         }
 
         public Rectangle rectangle()
@@ -83,8 +81,8 @@ namespace LevelEditorSpace
 
         public void TileSelect()
         {
-            // Console.WriteLine(this.texture.Name);
             PlatformShooter.LevelEditor.inSelectTile = this.texture.Name;
+            Console.WriteLine(PlatformShooter.LevelEditor.inSelectTile);
         }
 
         public void OnClickOnce(MouseState state)
